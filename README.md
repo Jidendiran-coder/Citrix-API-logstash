@@ -1,31 +1,25 @@
-# Citrix Logs Integration with ELK Stack
+# Step-by-Step Guide: Integrating Citrix with Logstash, Elasticsearch & Kibana
 
-Step-by-Step Guide: Integrating Citrix with Logstash, Elasticsearch & Kibana
 Now that you've successfully obtained an access token, let's move forward step by step to fetch logs from Citrix and integrate them with Logstash, Elasticsearch, and Kibana (ELK Stack).
 
-## Step 1: Use the Access Token in API Requests
+## 🔹 Step 1: Use the Access Token in API Requests
 Now that we have an access token, we will use it to authenticate API requests to fetch logs from Citrix.
 
-📌 Example Request to Fetch Citrix Audit Logs
-1️⃣ Identify the correct Citrix API endpoint for fetching logs
+### 📌 Example Request to Fetch Citrix Audit Logs
+#### 1️⃣ Identify the correct Citrix API endpoint for fetching logs
 The API endpoint to fetch Audit Logs is:
-
-bash
-Copy
-Edit
+```bash
 https://api.cloud.com/auditlog/v1/logs
-
+```
 or for US region:
-bash
-Copy
-Edit
+```bash
 https://api-us.cloud.com/auditlog/v1/logs
-2️⃣ Make an API Request to Fetch Logs
+```
+
+#### 2️⃣ Make an API Request to Fetch Logs
 Now, let's use Python to fetch Citrix logs:
 
-python
-Copy
-Edit
+```python
 import requests
 
 # Define API URL
@@ -49,9 +43,9 @@ if response.status_code == 200:
     print(response.json())  # Logs in JSON format
 else:
     print("Error:", response.status_code, response.text)
+```
+
 🔹 This script will fetch logs in JSON format, which we will later send to Logstash.
-
-
 
 ## Step 2: Send Citrix Logs to Logstash
 Now that we have Citrix logs in JSON format, we need to forward them to Logstash for further processing.
@@ -152,4 +146,3 @@ http://localhost:5601
 #### 3️⃣ Go to "Discover", and you should see the Citrix logs.
 
 🎉 **Congratulations! You have successfully integrated Citrix logs into ELK Stack. 🚀**
-
