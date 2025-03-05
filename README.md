@@ -14,8 +14,8 @@ bash
 Copy
 Edit
 https://api.cloud.com/auditlog/v1/logs
-or for US region:
 
+or for US region:
 bash
 Copy
 Edit
