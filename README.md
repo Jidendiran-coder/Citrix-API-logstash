@@ -1,3 +1,5 @@
+#Hi I'm **Joel** Please review the below steps to achieve citrix log collection using logstash
+
 # Step-by-Step Guide: Integrating Citrix with Logstash, Elasticsearch & Kibana
 
 Now that you've successfully obtained an access token, let's move forward step by step to fetch logs from Citrix and integrate them with Logstash, Elasticsearch, and Kibana (ELK Stack).
