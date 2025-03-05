@@ -1,8 +1,57 @@
 # Hi I'm **Joel**👋 Please review the below steps to achieve citrix log collection using logstash
 
-# Step-by-Step Guide: Integrating Citrix with Logstash, Elasticsearch & Kibana
+# 🛠️Step-by-Step Guide: Integrating Citrix with Logstash, Elasticsearch & Kibana
 
-Now that you've successfully obtained an access token, let's move forward step by step to fetch logs from Citrix and integrate them with Logstash, Elasticsearch, and Kibana (ELK Stack).
+## Pre-Requisites
+
+### 1️⃣ Get API Access in Citrix Cloud
+Before making API requests, you need to register an API client in Citrix Cloud.
+
+#### Step 1: Register an API Client
+- Log in to Citrix Cloud.
+- Go to **Identity and Access Management > API Access**.
+- Click **Create Client** and note:
+  - **Client ID**
+  - **Client Secret**
+- Assign **Monitor Administrator** permissions.
+
+### 2️⃣ Authenticate with Citrix API
+Citrix APIs use OAuth 2.0 authentication. You need to get an access token before fetching logs.
+
+#### Base URLs for Authentication (Region-Specific)
+- **Asia Pacific South:** `https://api-ap-s.cloud.com/cctrustoauth2/root/tokens/clients`
+- **European Union:** `https://api-eu.cloud.com/cctrustoauth2/root/tokens/clients`
+- **United States:** `https://api-us.cloud.com/cctrustoauth2/root/tokens/clients`
+- **Japan:** `https://api.citrixcloud.jp/cctrustoauth2/root/tokens/clients`
+
+Ensure you replace the base URL with the one corresponding to your Citrix Cloud account's region.
+
+#### Example in Python:
+```python
+import requests
+
+# Replace with the appropriate URL based on your region
+url = 'https://api.cloud.com/cctrustoauth2/root/tokens/clients'
+headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+data = {
+    'grant_type': 'client_credentials',
+    'client_id': '<YOUR_CLIENT_ID>',
+    'client_secret': '<YOUR_CLIENT_SECRET>'
+}
+
+response = requests.post(url, headers=headers, data=data)
+
+if response.status_code == 200:
+    access_token = response.json().get('access_token')
+    print('Access Token:', access_token)
+else:
+    print('Error:', response.status_code, response.text)
+```
+Ensure that you replace `<YOUR_CLIENT_ID>` and `<YOUR_CLIENT_SECRET>` with your actual Citrix Cloud API credentials.
+
+By using the correct token endpoint URL and ensuring the `Content-Type` is set to `application/x-www-form-urlencoded`, you should be able to successfully obtain an access token for Citrix Cloud API requests.
+
+---
 
 ## 🔹 Step 1: Use the Access Token in API Requests
 Now that we have an access token, we will use it to authenticate API requests to fetch logs from Citrix.
@@ -148,3 +197,5 @@ http://localhost:5601
 #### 3️⃣ Go to "Discover", and you should see the Citrix logs.
 
 🎉 **Congratulations! You have successfully integrated Citrix logs into ELK Stack. 🚀**
+
+
