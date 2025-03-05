@@ -1,4 +1,4 @@
-# Hi I'm **Joel** Please review the below steps to achieve citrix log collection using logstash
+# Hi I'm **Joel**👋 Please review the below steps to achieve citrix log collection using logstash
 
 # Step-by-Step Guide: Integrating Citrix with Logstash, Elasticsearch & Kibana
 
