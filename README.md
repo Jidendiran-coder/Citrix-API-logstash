@@ -18,7 +18,7 @@ Use the following **Python script** to get an access token:
 ```python
 import requests
 
-url = "https://api-us.cloud.com/cctrustoauth2/root/tokens/clients"
+url = "https://api.cloud.com/cctrustoauth2/root/tokens/clients"
 data = {
     "grant_type": "client_credentials",
     "client_id": "<YOUR_CLIENT_ID>",
@@ -46,7 +46,7 @@ import requests
 import json
 import time
 
-citrix_url = "https://api-us.cloud.com/auditlog/v1/logs"  # Change region if needed
+citrix_url = "https://api.cloud.com/auditlog/v1/logs"  # Change region if needed
 logstash_url = "http://<LOGSTASH_IP>:5044"  # Logstash input URL
 access_token = "<YOUR_ACCESS_TOKEN>"
 
