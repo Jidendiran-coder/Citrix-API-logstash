@@ -1,112 +1,105 @@
 # Hi I'm **Joel**👋 Please review the below steps to achieve citrix log collection using logstash
 
 # 🛠️Step-by-Step Guide: Integrating Citrix with Logstash, Elasticsearch & Kibana
+# Citrix Logs Integration with ELK (Logstash, Elasticsearch, Kibana)
 
-## Pre-Requisites
+## 📌 Overview
+This guide explains how to collect logs from **Citrix Cloud**, send them to **Logstash**, store them in **Elasticsearch**, and visualize them in **Kibana**.
 
-### 1️⃣ Get API Access in Citrix Cloud
-Before making API requests, you need to register an API client in Citrix Cloud.
-
-#### Step 1: Register an API Client
-- Log in to Citrix Cloud.
+## 🔹 Step 1: Get Access to Citrix Logs
+### 1️⃣ Get Citrix API Credentials
+- Log in to **Citrix Cloud**.
 - Go to **Identity and Access Management > API Access**.
-- Click **Create Client** and note:
-  - **Client ID**
-  - **Client Secret**
-- Assign **Monitor Administrator** permissions.
+- Create an API client and note down the **Client ID** and **Client Secret**.
 
-### 2️⃣ Authenticate with Citrix API
-Citrix APIs use OAuth 2.0 authentication. You need to get an access token before fetching logs.
+### 2️⃣ Obtain an Access Token
+Use the following **Python script** to get an access token:
 
-#### Base URLs for Authentication (Region-Specific)
-- **Asia Pacific South:** `https://api-ap-s.cloud.com/cctrustoauth2/root/tokens/clients`
-- **European Union:** `https://api-eu.cloud.com/cctrustoauth2/root/tokens/clients`
-- **United States:** `https://api-us.cloud.com/cctrustoauth2/root/tokens/clients`
-- **Japan:** `https://api.citrixcloud.jp/cctrustoauth2/root/tokens/clients`
-
-Ensure you replace the base URL with the one corresponding to your Citrix Cloud account's region.
-
-#### Example in Python:
 ```python
 import requests
 
-# Replace with the appropriate URL based on your region
-url = 'https://api.cloud.com/cctrustoauth2/root/tokens/clients'
-headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+url = "https://api-us.cloud.com/cctrustoauth2/root/tokens/clients"
 data = {
-    'grant_type': 'client_credentials',
-    'client_id': '<YOUR_CLIENT_ID>',
-    'client_secret': '<YOUR_CLIENT_SECRET>'
+    "grant_type": "client_credentials",
+    "client_id": "<YOUR_CLIENT_ID>",
+    "client_secret": "<YOUR_CLIENT_SECRET>"
 }
 
-response = requests.post(url, headers=headers, data=data)
+response = requests.post(url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"})
 
 if response.status_code == 200:
-    access_token = response.json().get('access_token')
-    print('Access Token:', access_token)
+    access_token = response.json().get("access_token")
+    print("Access Token:", access_token)
 else:
-    print('Error:', response.status_code, response.text)
+    print("Error:", response.status_code, response.text)
 ```
-Ensure that you replace `<YOUR_CLIENT_ID>` and `<YOUR_CLIENT_SECRET>` with your actual Citrix Cloud API credentials.
 
-By using the correct token endpoint URL and ensuring the `Content-Type` is set to `application/x-www-form-urlencoded`, you should be able to successfully obtain an access token for Citrix Cloud API requests.
+Replace `<YOUR_CLIENT_ID>` and `<YOUR_CLIENT_SECRET>` with your actual Citrix credentials.
 
 ---
 
-## 🔹 Step 1: Use the Access Token in API Requests
-Now that we have an access token, we will use it to authenticate API requests to fetch logs from Citrix.
-
-### 📌 Example Request to Fetch Citrix Audit Logs
-#### 1️⃣ Identify the correct Citrix API endpoint for fetching logs
-The API endpoint to fetch Audit Logs is:
-```bash
-https://api.cloud.com/auditlog/v1/logs
-```
-or for US region:
-```bash
-https://api-us.cloud.com/auditlog/v1/logs
-```
-
-#### 2️⃣ Make an API Request to Fetch Logs
-Now, let's use Python to fetch Citrix logs:
+## 🔹 Step 2: Fetch Logs from Citrix API
+Use this **Python script** to fetch logs from Citrix and send them to Logstash:
 
 ```python
 import requests
+import json
+import time
 
-# Define API URL
-url = "https://api.cloud.com/auditlog/v1/logs"  # Change URL based on your region
-
-# Access Token (Replace this with the token you obtained)
+citrix_url = "https://api-us.cloud.com/auditlog/v1/logs"  # Change region if needed
+logstash_url = "http://<LOGSTASH_IP>:5044"  # Logstash input URL
 access_token = "<YOUR_ACCESS_TOKEN>"
 
-# Set headers with authentication
 headers = {
     "Authorization": f"Bearer {access_token}",
     "Content-Type": "application/json"
 }
 
-# Make API request
-response = requests.get(url, headers=headers)
+def fetch_logs():
+    logs = []
+    next_page = None
 
-# Print response
-if response.status_code == 200:
-    print("Logs Fetched Successfully:")
-    print(response.json())  # Logs in JSON format
-else:
-    print("Error:", response.status_code, response.text)
+    while True:
+        params = {"page": next_page} if next_page else {}
+        response = requests.get(citrix_url, headers=headers, params=params)
+
+        if response.status_code == 200:
+            data = response.json()
+            logs.extend(data.get("logs", []))
+            next_page = data.get("next_page", None)
+            if not next_page:
+                break
+        else:
+            print("Error:", response.status_code, response.text)
+            break
+    return logs
+
+def send_to_logstash(logs):
+    if logs:
+        response = requests.post(logstash_url, json=logs)
+        if response.status_code == 200:
+            print("Logs sent to Logstash.")
+        else:
+            print("Error sending logs:", response.status_code, response.text)
+
+while True:
+    logs = fetch_logs()
+    if logs:
+        send_to_logstash(logs)
+    time.sleep(300)  # Fetch logs every 5 minutes
 ```
 
-🔹 This script will fetch logs in JSON format, which we will later send to Logstash.
+Replace `<LOGSTASH_IP>` and `<YOUR_ACCESS_TOKEN>` with actual values.
 
-## Step 2: Send Citrix Logs to Logstash
-Now that we have Citrix logs in JSON format, we need to forward them to Logstash for further processing.
+---
 
-### 📌 Configure Logstash to Accept Logs
-#### 1️⃣ Open your Logstash Configuration File (logstash.conf):
+## 🔹 Step 3: Configure Logstash
+### 1️⃣ Create Logstash Configuration File
 ```bash
-sudo nano /etc/logstash/conf.d/logstash.conf
+sudo nano /etc/logstash/conf.d/citrix_logs.conf
 ```
-#### 2️⃣ Modify logstash.conf to accept input from HTTP (Citrix Logs)
+
+### 2️⃣ Add Logstash Input & Output Configuration
 ```yaml
 input {
   http {
@@ -123,79 +116,65 @@ filter {
 
 output {
   elasticsearch {
-    hosts => ["http://localhost:9200"]  # Elasticsearch URL
+    hosts => ["http://<ELASTICSEARCH_IP>:9200"]
     index => "citrix-logs-%{+YYYY.MM.dd}"
   }
   stdout { codec => rubydebug }
 }
 ```
-#### 3️⃣ Save & Restart Logstash
+
+Replace `<ELASTICSEARCH_IP>` with the correct Elasticsearch server address.
+
+### 3️⃣ Restart Logstash
 ```bash
 sudo systemctl restart logstash
 ```
-Now, Logstash will listen on port 5044 for incoming logs.
 
-## 🔹 Step 3: Push Logs from Python to Logstash
-Now, we will modify our Python script to send logs to Logstash.
+---
 
-```python
-import requests
-import json
-
-# Citrix API URL
-citrix_url = "https://api.cloud.com/auditlog/v1/logs"
-
-# Logstash URL
-logstash_url = "http://localhost:5044"
-
-# Access Token
-access_token = "<YOUR_ACCESS_TOKEN>"
-
-# Headers
-headers = {
-    "Authorization": f"Bearer {access_token}",
-    "Content-Type": "application/json"
-}
-
-# Fetch Citrix Logs
-response = requests.get(citrix_url, headers=headers)
-
-if response.status_code == 200:
-    logs = response.json()  # Extract logs
-    
-    # Send logs to Logstash
-    logstash_response = requests.post(logstash_url, json=logs)
-    
-    if logstash_response.status_code == 200:
-        print("Logs successfully sent to Logstash.")
-    else:
-        print("Error sending logs to Logstash:", logstash_response.status_code, logstash_response.text)
-else:
-    print("Error fetching Citrix logs:", response.status_code, response.text)
-```
-✅ Now, your logs are flowing into Logstash!
-
-## 🔹 Step 4: Verify Data in Elasticsearch
-Once Logstash processes the logs, they will be indexed in Elasticsearch.
-
-To verify, run:
+## 🔹 Step 4: Verify Logs in Elasticsearch
+Check if logs are stored in Elasticsearch:
 ```bash
-curl -X GET "http://localhost:9200/citrix-logs-*/_search?pretty"
+curl -X GET "http://<ELASTICSEARCH_IP>:9200/citrix-logs-*/_search?pretty"
 ```
-If logs are indexed correctly, you will see JSON logs as a response.
 
-## 🔹 Step 5: Visualize in Kibana
-#### 1️⃣ Open Kibana in your browser:
+---
+
+## 🔹 Step 5: View Logs in Kibana
+### 1️⃣ Open Kibana
+- Go to: `http://<KIBANA_IP>:5601`
+
+### 2️⃣ Create an Index Pattern
+- **Stack Management > Index Patterns**
+- Click **Create Index Pattern**
+- Enter: `citrix-logs-*`
+- Select **timestamp field**
+
+### 3️⃣ View Logs
+- Go to **Discover**
+- Select `citrix-logs-*` index
+- Search & analyze Citrix logs 🎉
+
+---
+
+## 🔹 Automate Script Execution
+Schedule the Python script using **Cron Job**:
 ```bash
-http://localhost:5601
+crontab -e
 ```
-#### 2️⃣ Go to "Stack Management" → "Index Patterns", then:
-- Click "Create Index Pattern"
-- Enter `citrix-logs-*`
-- Select the timestamp field
+Add this line:
+```bash
+*/5 * * * * /usr/bin/python3 /path/to/citrix_log_script.py
+```
 
-#### 3️⃣ Go to "Discover", and you should see the Citrix logs.
+---
 
-🎉 **Congratulations! You have successfully integrated Citrix logs into ELK Stack. 🚀**
+## 🔹 Security & Best Practices
+✅ **Use `.env` files** to store API credentials securely.
+✅ **Enable Role-Based Access Control (RBAC)** in Kibana to restrict log access.
+✅ **Set up Alerts in Kibana** to monitor critical Citrix events.
 
+---
 
+## 🎉 Conclusion
+You have successfully integrated Citrix logs into your existing ELK stack. Now you can monitor, search, and analyze Citrix logs in Kibana. 🚀
